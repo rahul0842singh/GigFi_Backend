@@ -12,14 +12,23 @@ const db = mysql.createPool({
   keepAliveInitialDelay: 10000,
 });
 
-db.connect((err) => {
-  if (err) {
-   console.error("Database error:", err);
-    return res.status(500).send("Database insert failed.");
+// db.connect((err) => {
+//   if (err) {
+//    console.error("Database error:", err);
+//     return res.status(500).send("Database insert failed.");
 
+//   } else {
+//     console.log('Connected to MySQL database');
+//   }
+// });
+
+db.query('SELECT 1', (err, results) => {
+  if (err) {
+    console.error('Database connection error:', err);
   } else {
-    console.log('Connected to MySQL database');
+    console.log('Database connected successfully:', results);
   }
 });
+
 
 module.exports = db

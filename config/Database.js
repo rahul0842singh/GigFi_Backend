@@ -6,8 +6,7 @@ const db = mysql.createConnection({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
    maxIdle: 0,
-idleTimeout: 60000,
-enableKeepAlive: true,
+
 });
 
 db.connect((err) => {

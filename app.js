@@ -597,10 +597,10 @@ app.post('/postings', authenticateToken, upload.single('listing_image'), (req, r
     subcategory,
     item,
     gig_coin_reward,
-    questions
+    questions,
+    buyorsell  // new field added
   } = req.body;
 
- 
   if (!type) {
     return res.status(400).send("Missing required field: type.");
   }
@@ -612,9 +612,9 @@ app.post('/postings', authenticateToken, upload.single('listing_image'), (req, r
     const sql = `
       INSERT INTO postings (
         user_id, type, title, description, listing_image, price,
-        distance, category, subcategory, item, gig_coin_reward, questions
+        distance, category, subcategory, item, gig_coin_reward, questions, buyorsell
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
       user_id,
@@ -628,7 +628,8 @@ app.post('/postings', authenticateToken, upload.single('listing_image'), (req, r
       subcategory || null,
       item || null,
       gig_coin_reward || null,
-      questions || null
+      questions || null,
+      buyorsell || null  // new field included
     ];
     db.query(sql, values, (err, result) => {
       if (err) {
@@ -671,6 +672,7 @@ app.post('/postings', authenticateToken, upload.single('listing_image'), (req, r
     insertPosting();
   }
 });
+
 
 // ---------------------- Discussion Forum Endpoints ----------------------
 

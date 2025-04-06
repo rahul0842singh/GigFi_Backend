@@ -176,7 +176,7 @@ app.get('/api/postings/:user_id', authenticateToken, (req, res) => {
     if (results.length === 0) {
       return res.status(404).json({ error: 'Posting not found' });
     }
-    res.send(results[]);
+    res.send(results);
   });
 });
 

@@ -162,6 +162,26 @@ app.get('/api/chatrooms', authenticateToken, (req, res) => {
   });
 });
 
+
+
+// Fetch a single posting by its ID
+app.get('/api/postings/:id', authenticateToken, (req, res) => {
+  const { user_id } = req.params;
+  const sql = 'SELECT * FROM postings WHERE user_id = ?';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: 'Database fetch failed' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Posting not found' });
+    }
+    res.json(results[0]);
+  });
+});
+
+
+
 // Create a new chatroom with an optional display picture
 app.post('/api/chatrooms', authenticateToken, upload.single('display_picture'), (req, res) => {
   const { name, details } = req.body;

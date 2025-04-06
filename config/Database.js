@@ -5,9 +5,11 @@ const db = mysql.createConnection({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
- 
-keepAliveInitialDelay: 10000, // 0 by default.
-  enableKeepAlive: true, // false by default.
+ waitForConnections: true,
+  connectionLimit: 10, // Adjust based on your app's needs
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 });
 
 db.connect((err) => {

@@ -895,21 +895,36 @@ app.post('/api/transaction', authenticateToken, (req, res) => {
   });
 });
 
-
 app.post('/api/walletconnectinsert', (req, res) => {
-  const {  walletaddress } = req.body;
+  const { walletaddress } = req.body;
 
   if (!walletaddress) {
-    return res.status(400).json({ error: 'id and walletaddress are required' });
+    return res.status(400).json({ error: 'walletaddress is required' });
   }
 
-  const sql = 'INSERT INTO walletconnect (walletaddress) VALUES ( ?)';
-  db.query(sql, [walletaddress], (err, result) => {
-    if (err) {
-      console.error('Insert error:', err);
-      return res.status(500).json({ error: 'Database error' });
+  // 1. Check if walletaddress already exists
+  const checkSql = 'SELECT * FROM walletconnect WHERE walletaddress = ?';
+  db.query(checkSql, [walletaddress], (checkErr, results) => {
+    if (checkErr) {
+      console.error('Check error:', checkErr);
+      return res.status(500).json({ error: 'Database error during check' });
     }
-    res.status(201).json({ message: 'Inserted successfully' });
+
+    if (results.length > 0) {
+      // Wallet already exists, return success without inserting
+      return res.status(200).json({ message: 'Wallet already exists. Skipping insert.' });
+    }
+
+    // 2. Insert if not exists
+    const insertSql = 'INSERT INTO walletconnect (walletaddress) VALUES (?)';
+    db.query(insertSql, [walletaddress], (insertErr, insertResult) => {
+      if (insertErr) {
+        console.error('Insert error:', insertErr);
+        return res.status(500).json({ error: 'Database error during insert' });
+      }
+
+      res.status(201).json({ message: 'Inserted successfully' });
+    });
   });
 });
 

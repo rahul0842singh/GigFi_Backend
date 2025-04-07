@@ -167,7 +167,7 @@ app.get('/api/chatrooms', authenticateToken, (req, res) => {
 // Fetch a single posting by its ID
 app.get('/api/postings/:user_id', authenticateToken, (req, res) => {
   const { user_id } = req.params;
-  const sql = 'SELECT * FROM postings WHERE user_id = ?';
+ const sql = 'SELECT * FROM postings WHERE user_id = ? ORDER BY id DESC';
   db.query(sql, [user_id], (err, results) => {
     if (err) {
       console.error("Database error:", err);

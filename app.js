@@ -179,7 +179,7 @@ app.post('/api/logout', authenticateToken, (req, res) => {
 
 
 
-router.post('/api/register', authenticateToken, upload.single('display_picture'), (req, res) => {
+app.post('/api/register', authenticateToken, upload.single('display_picture'), (req, res) => {
   const { username, bio, wallet_id } = req.body;
 
   // Validate input

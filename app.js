@@ -116,26 +116,29 @@ app.get('/api/getWalletId', (req, res) => {
 
 
 // API 2: Check if a user with the given wallet_id exists in the users table
-app.get('/api/user', async (req, res) => {
-  const { wallet_id } = req.query;
+app.get('/api/user/check', (req, res) => {
+  const { wallet_id } = req.body;
+
   if (!wallet_id) {
     return res.status(400).json({ error: 'Missing wallet_id parameter' });
   }
-  try {
-    const [rows] = await pool.query(
-      'SELECT username, display_picture, bio, created_at, last_seen FROM users WHERE wallet_FK = ?',
-      [wallet_id]
-    );
-    if (rows.length === 0) {
+
+  const sql = 'SELECT username, display_picture, bio, created_at, last_seen FROM users WHERE wallet_FK = ?';
+
+  db.query(sql, [wallet_id], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database fetch failed' });
+    }
+
+    if (results.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    // Return the first matching user record
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+
+    res.json(results[0]);
+  });
 });
+
 
 // Logout user and update the last_seen timestamp
 app.post('/api/logout', authenticateToken, (req, res) => {

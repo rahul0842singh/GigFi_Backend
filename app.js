@@ -178,34 +178,40 @@ app.post('/api/logout', authenticateToken, (req, res) => {
 // Register a new user with an optional profile picture upload
 
 
-app.post('/api/register', authenticateToken, upload.single('display_picture'), (req, res) => {
-  const { username, bio } = req.body;
-  if (!username || !bio) {
-    return res.status(400).json({ error: 'Username and bio are required.' });
+
+router.post('/api/register', authenticateToken, upload.single('display_picture'), (req, res) => {
+  const { username, bio, wallet_id } = req.body;
+
+  // Validate input
+  if (!username || !bio || !wallet_id) {
+    return res.status(400).json({ error: 'Username, bio, and wallet_id are required.' });
   }
 
   // Check for duplicate username
   const checkQuery = 'SELECT * FROM users WHERE username = ?';
   db.query(checkQuery, [username], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) return res.status(500).json({ error: 'Database error on username check.', details: err });
     if (results.length > 0) {
       return res.status(400).json({ error: 'A user with the same username already exists.' });
     }
 
-    // Helper function to insert the user
+    // Function to insert user
     const insertUser = (display_picture = null) => {
-      const insertQuery = 'INSERT INTO users (username, display_picture, bio) VALUES (?, ?, ?)';
-      db.query(insertQuery, [username, display_picture, bio], (err, result) => {
-        if (err) return res.status(500).json({ error: err });
+      const insertQuery = `
+        INSERT INTO users (username, display_picture, bio, wallet_FK)
+        VALUES (?, ?, ?, ?)
+      `;
+      db.query(insertQuery, [username, display_picture, bio, wallet_id], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Database error on user insert.', details: err });
         res.json({ message: 'User registered successfully', userId: result.insertId });
       });
     };
 
-    // If a profile picture is provided, upload it to Cloudinary
+    // Handle display_picture (if provided)
     if (req.file) {
       const streamUpload = (buffer) => {
         return new Promise((resolve, reject) => {
-          let stream = cloudinary.uploader.upload_stream(
+          const stream = cloudinary.uploader.upload_stream(
             { folder: 'users' },
             (error, result) => {
               if (result) resolve(result);
@@ -217,17 +223,18 @@ app.post('/api/register', authenticateToken, upload.single('display_picture'), (
       };
 
       streamUpload(req.file.buffer)
-        .then((result) => {
-          insertUser(result.secure_url);
+        .then((uploadResult) => {
+          insertUser(uploadResult.secure_url);
         })
         .catch((error) => {
-          res.status(500).json({ error: error.message });
+          res.status(500).json({ error: 'Image upload failed.', details: error.message });
         });
     } else {
-      insertUser();
+      insertUser(); // No image uploaded
     }
   });
 });
+
 
 // ---------------------- Chatroom Endpoints ----------------------
 

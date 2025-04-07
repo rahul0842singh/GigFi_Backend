@@ -91,6 +91,48 @@ app.post('/api/wallet-login', (req, res) => {
   res.json({ token, walletAddress });
 });
 
+app.get('/api/getWalletId', async (req, res) => {
+  const { walletAddress } = req.query;
+  if (!walletAddress) {
+    return res.status(400).json({ error: 'Missing walletAddress parameter' });
+  }
+  try {
+    const [rows] = await pool.query(
+      'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?',
+      [walletAddress]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Wallet not found' });
+    }
+    // Return the first matching record
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching wallet id:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// API 2: Check if a user with the given wallet_id exists in the users table
+app.get('/api/user', async (req, res) => {
+  const { wallet_id } = req.query;
+  if (!wallet_id) {
+    return res.status(400).json({ error: 'Missing wallet_id parameter' });
+  }
+  try {
+    const [rows] = await pool.query(
+      'SELECT username, display_picture, bio, created_at, last_seen FROM users WHERE wallet_FK = ?',
+      [wallet_id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    // Return the first matching user record
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 // Logout user and update the last_seen timestamp
 app.post('/api/logout', authenticateToken, (req, res) => {

@@ -91,25 +91,29 @@ app.post('/api/wallet-login', (req, res) => {
   res.json({ token, walletAddress });
 });
 
-app.get('/api/getWalletId', async (req, res) => {
+app.get('/api/getWalletId', (req, res) => {
   const { walletAddress } = req.body;
+
   if (!walletAddress) {
     return res.status(400).json({ error: 'Missing walletAddress parameter' });
   }
-  try {
-    const [rows] = await pool.query(
-      'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?',
-      [walletAddress]
-    );
-    if (rows.length === 0) {
+
+  const sql = 'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?';
+
+  db.query(sql, [walletAddress], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database fetch failed' });
+    }
+
+    if (results.length === 0) {
       return res.status(404).json({ error: 'Wallet not found' });
     }
-    res.json(rows[0]);
-  } catch (error) {
-    console.error('Error fetching wallet id:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+
+    res.json(results[0]);
+  });
 });
+
 
 // API 2: Check if a user with the given wallet_id exists in the users table
 app.get('/api/user', async (req, res) => {

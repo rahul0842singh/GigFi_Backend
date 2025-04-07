@@ -91,8 +91,8 @@ app.post('/api/wallet-login', (req, res) => {
   res.json({ token, walletAddress });
 });
 
-app.get('/api/getWalletId', async (req, res) => {
-  const { walletAddress } = req.query;
+app.post('/api/getWalletId', async (req, res) => {
+  const { walletAddress } = req.body;
   if (!walletAddress) {
     return res.status(400).json({ error: 'Missing walletAddress parameter' });
   }
@@ -104,7 +104,6 @@ app.get('/api/getWalletId', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Wallet not found' });
     }
-    // Return the first matching record
     res.json(rows[0]);
   } catch (error) {
     console.error('Error fetching wallet id:', error);

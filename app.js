@@ -91,53 +91,83 @@ app.post('/api/wallet-login', (req, res) => {
   res.json({ token, walletAddress });
 });
 
-app.get('/api/getWalletId', (req, res) => {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+app.post('/api/user/fromWalletAddress', (req, res) => {
   const { walletAddress } = req.body;
 
   if (!walletAddress) {
     return res.status(400).json({ error: 'Missing walletAddress parameter' });
   }
 
-  const sql = 'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?';
+  // Step 1: Get wallet_id from walletconnect
+  const walletSql = 'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?';
 
-  db.query(sql, [walletAddress], (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database fetch failed' });
+  db.query(walletSql, [walletAddress], (walletErr, walletResults) => {
+    if (walletErr) {
+      console.error('Database error (wallet lookup):', walletErr);
+      return res.status(500).json({ error: 'Database fetch failed (wallet)' });
     }
 
-    if (results.length === 0) {
+    if (walletResults.length === 0) {
       return res.status(404).json({ error: 'Wallet not found' });
     }
 
-    res.json(results[0]);
+    const wallet_id = walletResults[0].wallet_id;
+
+    // Step 2: Get user info using wallet_id
+    const userSql = `
+      SELECT username, display_picture, bio, created_at, last_seen 
+      FROM users 
+      WHERE wallet_FK = ?
+    `;
+
+    db.query(userSql, [wallet_id], (userErr, userResults) => {
+      if (userErr) {
+        console.error('Database error (user lookup):', userErr);
+        return res.status(500).json({ error: 'Database fetch failed (user)' });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({
+        wallet_id,
+        user: userResults[0]
+      });
+    });
   });
 });
 
 
-// API 2: Check if a user with the given wallet_id exists in the users table
-app.get('/api/user/check', (req, res) => {
-  const { wallet_id } = req.body;
 
-  if (!wallet_id) {
-    return res.status(400).json({ error: 'Missing wallet_id parameter' });
-  }
 
-  const sql = 'SELECT username, display_picture, bio, created_at, last_seen FROM users WHERE wallet_FK = ?';
 
-  db.query(sql, [wallet_id], (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ error: 'Database fetch failed' });
-    }
 
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
 
-    res.json(results[0]);
-  });
-});
+
+
+
+
 
 
 // Logout user and update the last_seen timestamp

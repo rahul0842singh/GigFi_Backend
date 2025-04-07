@@ -909,7 +909,7 @@ app.post('/api/walletconnectinsert', (req, res) => {
       console.error('Insert error:', err);
       return res.status(500).json({ error: 'Database error' });
     }
-    res.status(201).json({ message: 'Inserted successfully', id });
+    res.status(201).json({ message: 'Inserted successfully' });
   });
 });
 

@@ -92,7 +92,7 @@ app.post('/api/wallet-login', (req, res) => {
 });
 
 app.get('/api/getWalletId', async (req, res) => {
-  const { walletAddress } = req.body;
+  const { walletAddress } = req.query;
   if (!walletAddress) {
     return res.status(400).json({ error: 'Missing walletAddress parameter' });
   }

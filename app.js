@@ -896,7 +896,22 @@ app.post('/api/transaction', authenticateToken, (req, res) => {
 });
 
 
+app.post('/api/walletconnectinsert', (req, res) => {
+  const {  wallet_address } = req.body;
 
+  if (!wallet_address) {
+    return res.status(400).json({ error: 'id and wallet_address are required' });
+  }
+
+  const sql = 'INSERT INTO walletconnect (wallet_address) VALUES ( ?)';
+  db.query(sql, [wallet_address], (err, result) => {
+    if (err) {
+      console.error('Insert error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.status(201).json({ message: 'Inserted successfully', id });
+  });
+});
 
 
 // Start the server with Socket.IO

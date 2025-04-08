@@ -929,6 +929,37 @@ app.post('/api/walletconnectinsert', (req, res) => {
 });
 
 
+
+
+app.post('/api/getwalletid', (req, res) => {
+  // Retrieve wallet address from the request body
+  const { walletaddress } = req.body;
+
+  // Validate that the wallet address was provided
+  if (!walletaddress) {
+    return res.status(400).json({ error: 'Wallet address is required.' });
+  }
+
+  // SQL query to retrieve wallet_id from wallet address
+  const sql = 'SELECT wallet_id FROM walletconnect WHERE walletaddress = ?';
+
+  // Execute the query using the database connection
+  db.query(sql, [walletaddress], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error.' });
+    }
+
+    // Check if any record exists for the provided wallet address
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Wallet address not found.' });
+    }
+
+    // Return the wallet_id from the first matching record
+    res.json({ wallet_id: results[0].wallet_id });
+  });
+});
+
 // Start the server with Socket.IO
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

@@ -93,16 +93,16 @@ app.post('/api/wallet-login', (req, res) => {
 
 
 
-// app.get('/api/users', authenticateToken, (req, res) => {
-//   const sqlQuery = 'SELECT * FROM users';
-//   db.query(sqlQuery, (error, results) => {
-//     if (error) {
-//       console.error('Error fetching users:', error);
-//       return res.status(500).json({ error: 'An error occurred while retrieving the users.' });
-//     }
-//     res.json(results);
-//   });
-// });
+app.get('/api/users', authenticateToken, (req, res) => {
+  const sqlQuery = 'SELECT * FROM users';
+  db.query(sqlQuery, (error, results) => {
+    if (error) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ error: 'An error occurred while retrieving the users.' });
+    }
+    res.json(results);
+  });
+});
 
 
 

@@ -103,7 +103,7 @@ app.get('/api/users',  authenticateToken,  (req, res) => {
     }
     res.json(results);
   });
-})
+});
 
 
 

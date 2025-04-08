@@ -557,7 +557,7 @@ app.get('/api/chatrooms/:id/unread-count', authenticateToken, (req, res) => {
 // ---------------------- Personal Message Endpoints ----------------------
 
 // Search for registered users by username (excluding the current user)
-app.get('/api/users', authenticateToken, (req, res) => {
+app.get('/api/users', (req, res) => {
   const search = req.query.search || '';
   const query = 'SELECT id, username, email FROM users WHERE username LIKE ? AND id != ?';
   db.query(query, [`%${search}%`, req.user.id], (err, results) => {

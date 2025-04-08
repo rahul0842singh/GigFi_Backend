@@ -93,8 +93,7 @@ app.post('/api/wallet-login', (req, res) => {
 
 
 
-
-app.get('/api/users',  authenticateToken,  (req, res) => {
+app.get('/api/users', authenticateToken, (req, res) => {
   const sqlQuery = 'SELECT * FROM users';
   db.query(sqlQuery, (error, results) => {
     if (error) {
@@ -104,8 +103,6 @@ app.get('/api/users',  authenticateToken,  (req, res) => {
     res.json(results);
   });
 });
-
-
 
 
 

@@ -166,6 +166,21 @@ app.post('/api/user/fromWalletAddress', (req, res) => {
 
 
 
+app.get("/api/getwallet_id", (req,res) =>{
+const {walletaddress} = req.body;
+   if (!wallet_id) {
+    return res.status(400).json({ error: 'Wallet Addess is  required.' });
+  }
+  const CheckQuery = "select * from walletconnect where walletaddress = ?";
+  db.query(CheckQuery,(err,results) =>{
+    if (err) return res.status(500).json({ error: 'There is an error.', details: err });
+    if (results.length > 0) {
+      res.json(results);
+      return res.status(400).json({ error: 'Wallet id is successfully fetched' });
+  }
+}
+
+
 
 
 

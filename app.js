@@ -177,8 +177,8 @@ const {walletaddress} = req.body;
     if (results.length > 0) {
       res.json(results);
       return res.status(400).json({ error: 'Wallet id is successfully fetched' });
-  }
-}
+  };
+});
 
 
 

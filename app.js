@@ -271,6 +271,23 @@ app.get('/api/postings/:user_id', authenticateToken, (req, res) => {
   });
 });
 
+// Fetch all postings
+app.get('/api/postings', authenticateToken, (req, res) => {
+  const { user_id } = req.params;
+ const sql = 'SELECT * FROM postings ORDER BY id DESC';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: 'Database fetch failed' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Posting not found' });
+    }
+    res.send(results);
+  });
+});
+
+
 
 
 // Create a new chatroom with an optional display picture

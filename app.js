@@ -166,18 +166,23 @@ app.post('/api/user/fromWalletAddress', (req, res) => {
 
 
 
-app.get("/api/getwallet_id", (req,res) =>{
-const {walletaddress} = req.body;
-   if (!wallet_id) {
-    return res.status(400).json({ error: 'Wallet Addess is  required.' });
+app.post("/api/getwallet_id", (req, res) => {
+  const { walletaddress } = req.body;
+  if (!walletaddress) {
+    return res.status(400).json({ error: "Wallet Address is required." });
   }
-  const CheckQuery = "select * from walletconnect where walletaddress = ?";
-  db.query(CheckQuery,(err,results) =>{
-    if (err) return res.status(500).json({ error: 'There is an error.', details: err });
+  
+  const checkQuery = "SELECT * FROM walletconnect WHERE walletaddress = ?";
+  db.query(checkQuery, [walletaddress], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: "There is an error.", details: err });
+    }
     if (results.length > 0) {
-      res.json(results);
-      return res.status(400).json({ error: 'Wallet id is successfully fetched' });
-  };
+      return res.status(200).json({ message: "Wallet id successfully fetched", wallet: results });
+    } else {
+      return res.status(404).json({ error: "Wallet not found." });
+    }
+  });
 });
 
 

@@ -196,6 +196,7 @@ app.get("/api/getallwallet", authenticateToken, (req, res) => {
       return res.status(500).json({ error: "There is an error.", details: err });
     }
     if (results.length > 0) {
+      res.json(results);
       return res.status(200).json({ message: "Wallet users successfully fetched", wallet: results });
     } else {
       return res.status(404).json({ error: "Wallet not found." });

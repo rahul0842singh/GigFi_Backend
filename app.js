@@ -166,7 +166,7 @@ app.post('/api/user/fromWalletAddress', (req, res) => {
 
 
 
-app.get("/api/getwallet_id", (req, res) => {
+app.get("/api/getwallet_id",authenticateToken, (req, res) => {
   const { walletaddress } = req.body;
   if (!walletaddress) {
     return res.status(400).json({ error: "Wallet Address is required." });

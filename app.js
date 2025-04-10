@@ -623,9 +623,9 @@ app.get('/api/users', (req, res) => {
 });
 
 // Get personal chat messages between the current user and another user
-app.get('/api/personal-chat/:userId/messages', authenticateToken, (req, res) => {
+app.get('/api/personal-chat/:userId/:senderId/messages', authenticateToken, (req, res) => {
   const otherUserId = req.params.userId;
-  const currentUserId = req.user.id;
+  const currentUserId = req.params.senderId;
   const query = `
     SELECT pm.*, u.username AS sender_username 
     FROM personal_messages pm 

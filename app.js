@@ -644,7 +644,7 @@ app.get('/api/personal-chat/:walletId1/:walletId2/messages', authenticateToken, 
 // Post a personal message (with optional attachment) to a specific user
 app.post('/api/personal-chat/:userId/:senderId/messages', 
   authenticateToken, 
-  upload.single('attachment'), 
+  upload.single('attachment_url'), 
   (req, res) => {
     const otherUserId = req.params.userId;
     const currentUserId = req.params.senderId;

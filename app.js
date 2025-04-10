@@ -642,67 +642,75 @@ app.get('/api/personal-chat/:walletId1/:walletId2/messages', authenticateToken, 
 
 
 // Post a personal message (with optional attachment) to a specific user
-app.post('/api/personal-chat/:userId/:senderId/messages', authenticateToken, upload.single('attachment'), (req, res) => {
-  const otherUserId = req.params.userId;
-  const currentUserId = req.params.senderId;
-  const { message } = req.body;
+app.post('/api/personal-chat/:userId/:senderId/messages', 
+  authenticateToken, 
+  upload.single('attachment'), 
+  (req, res) => {
+    const otherUserId = req.params.userId;
+    const currentUserId = req.params.senderId;
+    const { message } = req.body;
 
-  const streamUpload = (buffer) => {
-    return new Promise((resolve, reject) => {
-      let stream = cloudinary.uploader.upload_stream((error, result) => {
-        if (result) resolve(result);
-        else reject(error);
+    // Helper function to upload to Cloudinary already defined above
+    const streamUpload = (buffer) => {
+      return new Promise((resolve, reject) => {
+        let stream = cloudinary.uploader.upload_stream((error, result) => {
+          if (result) resolve(result);
+          else reject(error);
+        });
+        streamifier.createReadStream(buffer).pipe(stream);
       });
-      streamifier.createReadStream(buffer).pipe(stream);
-    });
-  };
+    };
 
-  if (req.file) {
-    streamUpload(req.file.buffer)
-      .then((result) => {
-        const attachment_url = result.secure_url;
-        const insertQuery = `
-          INSERT INTO personal_messages (sender_id, receiver_id, message, attachment_url, is_read) 
-          VALUES (?, ?, ?, ?, 0)
-        `;
-        db.query(insertQuery, [currentUserId, otherUserId, message, attachment_url], (err) => {
-          if (err) return res.status(500).json({ error: err });
-          const recipientSocketId = connectedUsers[otherUserId];
-          if (recipientSocketId) {
-            io.to(recipientSocketId).emit('newPersonalMessage', {
-              sender_id: currentUserId,
-              receiver_id: otherUserId,
-              message,
-              attachment_url,
-              created_at: new Date()
-            });
-          }
-          res.json({ message: 'Personal message with attachment sent successfully' });
+    if (req.file) {
+      // If a file exists, upload it to Cloudinary
+      streamUpload(req.file.buffer)
+        .then((result) => {
+          const attachment_url = result.secure_url;
+          // Insert the personal message along with the attachment_url into the database
+          const insertQuery = `
+            INSERT INTO personal_messages (sender_id, receiver_id, message, attachment_url, is_read) 
+            VALUES (?, ?, ?, ?, 0)
+          `;
+          db.query(insertQuery, [currentUserId, otherUserId, message, attachment_url], (err) => {
+            if (err) return res.status(500).json({ error: err });
+            const recipientSocketId = connectedUsers[otherUserId];
+            if (recipientSocketId) {
+              io.to(recipientSocketId).emit('newPersonalMessage', {
+                sender_id: currentUserId,
+                receiver_id: otherUserId,
+                message,
+                attachment_url,
+                created_at: new Date()
+              });
+            }
+            res.json({ message: 'Personal message with attachment sent successfully' });
+          });
+        })
+        .catch((error) => {
+          res.status(500).json({ error: error.message });
         });
-      })
-      .catch((error) => {
-        res.status(500).json({ error: error.message });
+    } else {
+      // If no file is sent, insert the message normally
+      const insertQuery = `
+        INSERT INTO personal_messages (sender_id, receiver_id, message, is_read) 
+        VALUES (?, ?, ?, 0)
+      `;
+      db.query(insertQuery, [currentUserId, otherUserId, message], (err) => {
+        if (err) return res.status(500).json({ error: err });
+        const recipientSocketId = connectedUsers[otherUserId];
+        if (recipientSocketId) {
+          io.to(recipientSocketId).emit('newPersonalMessage', {
+            sender_id: currentUserId,
+            receiver_id: otherUserId,
+            message,
+            created_at: new Date()
+          });
+        }
+        res.json({ message: 'Personal message sent successfully' });
       });
-  } else {
-    const insertQuery = `
-      INSERT INTO personal_messages (sender_id, receiver_id, message, is_read) 
-      VALUES (?, ?, ?, 0)
-    `;
-    db.query(insertQuery, [currentUserId, otherUserId, message], (err) => {
-      if (err) return res.status(500).json({ error: err });
-      const recipientSocketId = connectedUsers[otherUserId];
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit('newPersonalMessage', {
-          sender_id: currentUserId,
-          receiver_id: otherUserId,
-          message,
-          created_at: new Date()
-        });
-      }
-      res.json({ message: 'Personal message sent successfully' });
-    });
-  }
+    }
 });
+
 
 // Mark personal messages as read in a conversation
 app.post('/api/personal-chat/:userId/mark-read', authenticateToken, (req, res) => {

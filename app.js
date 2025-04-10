@@ -623,22 +623,23 @@ app.get('/api/users', (req, res) => {
 });
 
 // Get personal chat messages between the current user and another user
-app.get('/api/personal-chat/:userId/:senderId/messages', authenticateToken, (req, res) => {
-  const otherUserId = req.params.userId;
-  const currentUserId = req.params.senderId;
+app.get('/api/personal-chat/:walletId1/:walletId2/messages', authenticateToken, (req, res) => {
+  const walletId1 = req.params.walletId1;
+  const walletId2 = req.params.walletId2;
   const query = `
-    SELECT pm.*, u.username AS sender_username 
+    SELECT pm.*, wc.walletaddress AS sender_walletaddress
     FROM personal_messages pm 
-    JOIN users u ON pm.sender_id = u.id 
-    WHERE (sender_id = ? AND receiver_id = ?) 
-       OR (sender_id = ? AND receiver_id = ?)
-    ORDER BY created_at ASC
+    JOIN walletconnect wc ON pm.sender_id = wc.wallet_id 
+    WHERE (pm.sender_id = ? AND pm.receiver_id = ?)
+       OR (pm.sender_id = ? AND pm.receiver_id = ?)
+    ORDER BY pm.created_at ASC
   `;
-  db.query(query, [currentUserId, otherUserId, otherUserId, currentUserId], (err, results) => {
+  db.query(query, [walletId1, walletId2, walletId2, walletId1], (err, results) => {
     if (err) return res.status(500).json({ error: err });
     res.json(results);
   });
 });
+
 
 // Post a personal message (with optional attachment) to a specific user
 app.post('/api/personal-chat/:userId/:senderId/messages', authenticateToken, upload.single('attachment'), (req, res) => {

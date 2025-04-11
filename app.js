@@ -401,30 +401,30 @@ app.post('/api/chatrooms/:id/:currentUserId/add', authenticateToken, (req, res) 
   const { wallet_id } = req.body;
   const currentUserId = req.params.currentUserId;
     
-    // Verify that the user exists
-    const userCheckQuery = 'SELECT * FROM walletconnect WHERE wallet_id = ?';
-    db.query(userCheckQuery, [wallet_id], (err, userResults) => {
+  // Verify that the user exists
+  const userCheckQuery = 'SELECT * FROM walletconnect WHERE wallet_id = ?';
+  db.query(userCheckQuery, [wallet_id], (err, userResults) => {
+    if (err) return res.status(500).json({ error: err });
+    if (userResults.length === 0)
+      return res.status(400).json({ error: 'User is not registered' });
+    
+    // Ensure the user is not already a member
+    const memberCheckQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';
+    db.query(memberCheckQuery, [chatroomId, wallet_id], (err, memberResults) => {
       if (err) return res.status(500).json({ error: err });
-      if (userResults.length === 0)
-        return res.status(400).json({ error: 'User is not registered' });
+      if (memberResults.length > 0)
+        return res.status(400).json({ error: 'User is already a member' });
       
-      // Ensure the user is not already a member
-      const memberCheckQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';
-      db.query(memberCheckQuery, [chatroomId, wallet_id], (err, memberResults) => {
-        if (err) return res.status(500).json({ error: err });
-        if (memberResults.length > 0)
-          return res.status(400).json({ error: 'User is already a member' });
-        
-        // Add the user as a member
-        const addQuery = 'INSERT INTO chatroom_members (chatroom_id, user_id, role) VALUES (?, ?, "member")';
-        db.query(addQuery, [chatroomId, wallet_id], (err2) => {
-          if (err2) return res.status(500).json({ error: err2 });
-          res.json({ message: 'Member added successfully' });
-        });
+      // Add the user as a member
+      const addQuery = 'INSERT INTO chatroom_members (chatroom_id, user_id, role) VALUES (?, ?, "member")';
+      db.query(addQuery, [chatroomId, wallet_id], (err2) => {
+        if (err2) return res.status(500).json({ error: err2 });
+        res.json({ message: 'Member added successfully' });
       });
     });
   });
 });
+
 
 // Remove a member from a chatroom (admin only)
 app.delete('/api/chatrooms/:id/remove', authenticateToken, (req, res) => {

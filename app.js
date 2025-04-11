@@ -627,9 +627,12 @@ app.get('/api/personal-chat/:walletId1/:walletId2/messages', authenticateToken, 
   const walletId1 = req.params.walletId1;
   const walletId2 = req.params.walletId2;
   const query = `
-    SELECT pm.*, wc.walletaddress AS sender_walletaddress
-    FROM personal_messages pm 
-    JOIN walletconnect wc ON pm.sender_id = wc.wallet_id 
+    SELECT pm.*, 
+           wc_sender.walletaddress AS sender_walletaddress, 
+           wc_receiver.walletaddress AS receiver_walletaddress
+    FROM personal_messages pm
+    JOIN walletconnect wc_sender ON pm.sender_id = wc_sender.wallet_id
+    JOIN walletconnect wc_receiver ON pm.receiver_id = wc_receiver.wallet_id
     WHERE (pm.sender_id = ? AND pm.receiver_id = ?)
        OR (pm.sender_id = ? AND pm.receiver_id = ?)
     ORDER BY pm.created_at ASC
@@ -639,6 +642,7 @@ app.get('/api/personal-chat/:walletId1/:walletId2/messages', authenticateToken, 
     res.json(results);
   });
 });
+
 
 
 // Post a personal message (with optional attachment) to a specific user

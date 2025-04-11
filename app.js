@@ -398,33 +398,26 @@ app.post('/api/chatrooms/:created_by', authenticateToken, upload.single('display
 // Add a member to a chatroom (admin only)
 app.post('/api/chatrooms/:id/:currentUserId/add', authenticateToken, (req, res) => {
   const chatroomId = req.params.id;
-  const { userId } = req.body;
+  const { wallet_id } = req.body;
   const currentUserId = req.params.id;
-
-  // Check if the current user is an admin in the chatroom
-  const adminQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ? AND role = "admin"';
-  db.query(adminQuery, [chatroomId, currentUserId], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
-    if (results.length === 0)
-      return res.status(403).json({ error: 'Only admin can add members' });
     
     // Verify that the user exists
-    const userCheckQuery = 'SELECT * FROM users WHERE id = ?';
-    db.query(userCheckQuery, [userId], (err, userResults) => {
+    const userCheckQuery = 'SELECT * FROM walletconnect WHERE wallet_id = ?';
+    db.query(userCheckQuery, [wallet_id], (err, userResults) => {
       if (err) return res.status(500).json({ error: err });
       if (userResults.length === 0)
         return res.status(400).json({ error: 'User is not registered' });
       
       // Ensure the user is not already a member
       const memberCheckQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';
-      db.query(memberCheckQuery, [chatroomId, userId], (err, memberResults) => {
+      db.query(memberCheckQuery, [chatroomId, wallet_id], (err, memberResults) => {
         if (err) return res.status(500).json({ error: err });
         if (memberResults.length > 0)
           return res.status(400).json({ error: 'User is already a member' });
         
         // Add the user as a member
         const addQuery = 'INSERT INTO chatroom_members (chatroom_id, user_id, role) VALUES (?, ?, "member")';
-        db.query(addQuery, [chatroomId, userId], (err2) => {
+        db.query(addQuery, [chatroomId, wallet_id], (err2) => {
           if (err2) return res.status(500).json({ error: err2 });
           res.json({ message: 'Member added successfully' });
         });

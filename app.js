@@ -399,7 +399,7 @@ app.post('/api/chatrooms/:created_by', authenticateToken, upload.single('display
 app.post('/api/chatrooms/:id/:currentUserId/add', authenticateToken, (req, res) => {
   const chatroomId = req.params.id;
   const { wallet_id } = req.body;
-  const currentUserId = req.params.id;
+  const currentUserId = req.params.currentUserId;
     
     // Verify that the user exists
     const userCheckQuery = 'SELECT * FROM walletconnect WHERE wallet_id = ?';

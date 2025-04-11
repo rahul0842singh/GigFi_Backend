@@ -347,7 +347,7 @@ app.get('/api/postings', authenticateToken, (req, res) => {
 // Create a new chatroom with an optional display picture
 app.post('/api/chatrooms/:created_by', authenticateToken, upload.single('display_picture'), (req, res) => {
   const { name, details } = req.body;
-  const createdBy = req.user.id;
+  const createdBy = req.params.created_by;
 
   if (req.file) {
     const streamUpload = (buffer) => {

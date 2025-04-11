@@ -396,10 +396,10 @@ app.post('/api/chatrooms/:created_by', authenticateToken, upload.single('display
 });
 
 // Add a member to a chatroom (admin only)
-app.post('/api/chatrooms/:id/add', authenticateToken, (req, res) => {
+app.post('/api/chatrooms/:id/:currentUserId/add', authenticateToken, (req, res) => {
   const chatroomId = req.params.id;
   const { userId } = req.body;
-  const currentUserId = req.user.id;
+  const currentUserId = req.params.id;
 
   // Check if the current user is an admin in the chatroom
   const adminQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ? AND role = "admin"';

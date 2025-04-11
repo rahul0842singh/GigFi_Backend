@@ -284,13 +284,28 @@ app.post('/api/register', authenticateToken, upload.single('display_picture'), (
 // ---------------------- Chatroom Endpoints ----------------------
 
 // Retrieve all chatrooms ordered by newest first
-app.get('/api/chatrooms', authenticateToken, (req, res) => {
+app.get('/api/chatrooms/:created_by', authenticateToken, (req, res) => {
+  const createdBy = req.params.created_by; // Retrieve the created_by parameter from the URL
+  const query = `SELECT * FROM chatrooms WHERE created_by = ? ORDER BY created_at DESC`;
+  
+  // Using a parameterized query to prevent SQL injection
+  db.query(query, [createdBy], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err });
+    }
+    res.json(results);
+  });
+});
+
+
+app.get('/api/chatrooms/:wallet_id', authenticateToken, (req, res) => {
   const query = `SELECT * FROM chatrooms ORDER BY created_at DESC`;
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err });
     res.json(results);
   });
 });
+
 
 
 

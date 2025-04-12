@@ -471,9 +471,9 @@ app.delete('/api/chatrooms/:id', authenticateToken, (req, res) => {
 
 
 // Retrieve all messages from a chatroom (only for members)
-app.get('/api/chatrooms/:id/messages', authenticateToken, (req, res) => {
+app.get('/api/chatrooms/:id/:currentUserId/messages', authenticateToken, (req, res) => {
   const chatroomId = req.params.id;
-  const currentUserId = req.user.id; // from your authenticateToken middleware
+  const currentUserId = req.params.currentUserId; // from your authenticateToken middleware
 
   // Verify that the current user is a member of the chatroom
   const membershipQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';

@@ -28,25 +28,54 @@ const io = socketIo(server, {
 // Mapping to store connected users (userId -> socketId)
 const connectedUsers = {};
 
-// Socket.IO event handlers
-io.on('connection', (socket) => {
-  console.log('A user connected: ' + socket.id);
+        // Socket.IO event handlers
+// io.on('connection', (socket) => {
+//   console.log('A user connected: ' + socket.id);
 
-  // Register the socket with a userId
-  socket.on('register', (userId) => {
-    connectedUsers[userId] = socket.id;
-    console.log(`User ${userId} registered with socket id: ${socket.id}`);
+       // Register the socket with a userId
+//   socket.on('register', (userId) => {
+//     connectedUsers[userId] = socket.id;
+//     console.log(`User ${userId} registered with socket id: ${socket.id}`);
+//   });
+
+      // Remove the user from the mapping upon disconnect
+//   socket.on('disconnect', () => {
+//     for (const [userId, sockId] of Object.entries(connectedUsers)) {
+//       if (sockId === socket.id) {
+//         delete connectedUsers[userId];
+//         console.log(`User ${userId} disconnected.`);
+//         break;
+//       }
+//     }
+//   });
+// });
+
+io.on("connection", (socket) => {
+  console.log("New client connected", socket.id);
+
+  // <-- Add your join_room and leave_room handlers here
+
+  socket.on("join_room", (data) => {
+    const { roomId, wallet_id } = data;
+    socket.join(roomId);
+    console.log(`Socket ${socket.id} (wallet: ${wallet_id}) joined room: ${roomId}`);
   });
 
-  // Remove the user from the mapping upon disconnect
-  socket.on('disconnect', () => {
-    for (const [userId, sockId] of Object.entries(connectedUsers)) {
-      if (sockId === socket.id) {
-        delete connectedUsers[userId];
-        console.log(`User ${userId} disconnected.`);
-        break;
-      }
-    }
+  socket.on("leave_room", (data) => {
+    const { roomId, wallet_id } = data;
+    socket.leave(roomId);
+    console.log(`Socket ${socket.id} (wallet: ${wallet_id}) left room: ${roomId}`);
+  });
+
+  socket.on("send_message", (data) => {
+    const { roomId, message } = data;
+    // Save message to database if needed
+    io.to(roomId).emit("new_message", { chatRoomId: roomId, message });
+    console.log(`Message sent to room ${roomId}:`, message);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected", socket.id);
   });
 });
 

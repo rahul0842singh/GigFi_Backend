@@ -346,27 +346,30 @@ app.get('/api/chatrooms/:wallet_id', authenticateToken, (req, res) => {
 });
 
 
-//get all members in chatroom
-app.get('/chatroom/:chatroomId/members', async (req, res) => {
+
+// Get all members in a chatroom (with their wallet addresses)
+app.get('/api/chatroom/:chatroomId/members', authenticateToken, (req, res) => {
   const { chatroomId } = req.params;
 
-  try {
-    const [results] = await db.query(`
-      SELECT cm.user_id, w.walletaddress
-      FROM chatroom_members cm
-      JOIN walletconnect w ON cm.user_id = w.wallet_id
-      WHERE cm.chatroom_id = ?
-    `, [chatroomId]);
+  const query = `
+    SELECT cm.user_id, w.walletaddress
+    FROM chatroom_members cm
+    JOIN walletconnect w ON cm.user_id = w.wallet_id
+    WHERE cm.chatroom_id = ?
+  `;
+
+  db.query(query, [chatroomId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch chatroom members." });
+    }
 
     if (results.length === 0) {
       return res.status(404).json({ error: "No members found in this chatroom." });
     }
 
     res.status(200).json(results);
-  } catch (error) {
-    console.error("Database error:", error);
-    res.status(500).json({ error: "Failed to fetch chatroom members." });
-  }
+  });
 });
 
 

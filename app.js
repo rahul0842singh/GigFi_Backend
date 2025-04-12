@@ -962,120 +962,56 @@ app.post('/postings', authenticateToken, upload.single('listing_image'), (req, r
 // ---------------------- Discussion Forum Endpoints ----------------------
 
 // Get all forum messages
-// app.get('/api/forum/messages', authenticateToken, (req, res) => {
-//   const query = `
-//     SELECT fm.*, w.walletaddress 
-//     FROM forum_messages fm
-//     JOIN walletconnect w ON fm.user_id = w.wallet_id
-//     ORDER BY fm.created_at ASC
-//   `;
-//   db.query(query, (err, results) => {
-//     if (err) return res.status(500).json({ error: err });
-//     res.json(results);
-//   });
-// });
-
-// Post a new forum message (text only)
-// app.post('/api/forum/messages', authenticateToken, (req, res) => {
-//   const { message } = req.body;
-//   const currentUserId = req.user.id;
-//   const insertQuery = `
-//     INSERT INTO forum_messages (user_id, message, is_read) VALUES (?, ?, 0)
-//   `;
-//   db.query(insertQuery, [currentUserId, message], (err) => {
-//     if (err) return res.status(500).json({ error: err });
-//     // Emit the new forum message to all connected users (except the sender)
-//     Object.keys(connectedUsers).forEach(userId => {
-//       if (parseInt(userId) !== currentUserId) {
-//         io.to(connectedUsers[userId]).emit('newForumMessage', {
-//           sender_id: currentUserId,
-//           message,
-//           created_at: new Date()
-//         });
-//       }
-//     });
-//     res.json({ message: 'Forum message posted successfully' });
-//   });
-// });
-
-
-// Get all forum messages with real-time subscription
 app.get('/api/forum/messages', authenticateToken, (req, res) => {
-  const currentUserId = req.user.id;
-  
   const query = `
-    SELECT fm.*, w.walletaddress, u.username, u.display_picture
-    FROM forum_messages fm
-    JOIN walletconnect w ON fm.user_id = w.wallet_id
-    LEFT JOIN users u ON w.wallet_id = u.wallet_FK
-    ORDER BY fm.created_at ASC
+   SELECT 
+    fm.id AS message_id,
+    fm.message,
+    fm.created_at,
+    fm.is_read,
+    fm.user_id,
+    wc.walletaddress AS sender_wallet_address
+FROM 
+    forum_messages fm
+JOIN 
+    walletconnect wc ON fm.user_id = wc.wallet_id
+ORDER BY 
+    fm.created_at DESC;
   `;
-  
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err });
-    
-    // Join the forum room for real-time updates
-    const socketId = Object.keys(connectedUsers).find(key => connectedUsers[key] === currentUserId);
-    if (socketId) {
-      io.to(socketId).emit('joinForum', { room: 'forum' });
-    }
-    
     res.json(results);
   });
 });
 
-// Post a new forum message with real-time broadcasting
-app.post('/api/forum/messages', authenticateToken, (req, res) => {
-  const { message } = req.body;
-  const currentUserId = req.user.id;
 
-  // First get user details for the broadcast
-  const userQuery = `
-    SELECT w.walletaddress, u.username, u.display_picture
-    FROM walletconnect w
-    LEFT JOIN users u ON w.wallet_id = u.wallet_FK
-    WHERE w.wallet_id = ?
+
+// Post a new forum message (text only)
+app.post('/api/forum/messages/:currentUserId', authenticateToken, (req, res) => {
+  const { message } = req.body;
+  const currentUserId = req.params.currentUserId;
+  const insertQuery = `
+    INSERT INTO forum_messages (user_id, message, is_read) VALUES (?, ?, 0)
   `;
-  
-  db.query(userQuery, [currentUserId], (userErr, userResults) => {
-    if (userErr) return res.status(500).json({ error: userErr });
-    
-    const user = userResults[0] || {};
-    
-    // Insert the message (database will handle timestamp with current_timestamp)
-    const insertQuery = `
-      INSERT INTO forum_messages (user_id, message, is_read) 
-      VALUES (?, ?, 0)
-    `;
-    
-    db.query(insertQuery, [currentUserId, message], (err, result) => {
-      if (err) return res.status(500).json({ error: err });
-      
-      // Get the full message including the database-generated timestamp
-      const selectQuery = `
-        SELECT fm.*, w.walletaddress, u.username, u.display_picture
-        FROM forum_messages fm
-        JOIN walletconnect w ON fm.user_id = w.wallet_id
-        LEFT JOIN users u ON w.wallet_id = u.wallet_FK
-        WHERE fm.id = ?
-      `;
-      
-      db.query(selectQuery, [result.insertId], (selectErr, selectResults) => {
-        if (selectErr) return res.status(500).json({ error: selectErr });
-        
-        const newMessage = selectResults[0];
-        
-        // Broadcast to all clients in the forum room
-        io.to('forum').emit('newForumMessage', newMessage);
-        
-        res.json({ 
-          message: 'Forum message posted successfully',
-          data: newMessage
+  db.query(insertQuery, [currentUserId, message], (err) => {
+    if (err) return res.status(500).json({ error: err });
+    // Emit the new forum message to all connected users (except the sender)
+    Object.keys(connectedUsers).forEach(userId => {
+      if (parseInt(userId) !== currentUserId) {
+        io.to(connectedUsers[userId]).emit('newForumMessage', {
+          sender_id: currentUserId,
+          message,
+          created_at: new Date()
         });
-      });
+      }
     });
+    res.json({ message: 'Forum message posted successfully' });
   });
 });
+
+
+
+
 
 // Mark all forum messages as read for the current user
 app.post('/api/forum/mark-read', authenticateToken, (req, res) => {

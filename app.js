@@ -1024,6 +1024,59 @@ app.get('/api/forum/messages', authenticateToken, (req, res) => {
   });
 });
 
+// Post a new forum message with real-time broadcasting
+app.post('/api/forum/messages', authenticateToken, (req, res) => {
+  const { message } = req.body;
+  const currentUserId = req.user.id;
+
+  // First get user details for the broadcast
+  const userQuery = `
+    SELECT w.walletaddress, u.username, u.display_picture
+    FROM walletconnect w
+    LEFT JOIN users u ON w.wallet_id = u.wallet_FK
+    WHERE w.wallet_id = ?
+  `;
+  
+  db.query(userQuery, [currentUserId], (userErr, userResults) => {
+    if (userErr) return res.status(500).json({ error: userErr });
+    
+    const user = userResults[0] || {};
+    
+    // Insert the message (database will handle timestamp with current_timestamp)
+    const insertQuery = `
+      INSERT INTO forum_messages (user_id, message, is_read) 
+      VALUES (?, ?, 0)
+    `;
+    
+    db.query(insertQuery, [currentUserId, message], (err, result) => {
+      if (err) return res.status(500).json({ error: err });
+      
+      // Get the full message including the database-generated timestamp
+      const selectQuery = `
+        SELECT fm.*, w.walletaddress, u.username, u.display_picture
+        FROM forum_messages fm
+        JOIN walletconnect w ON fm.user_id = w.wallet_id
+        LEFT JOIN users u ON w.wallet_id = u.wallet_FK
+        WHERE fm.id = ?
+      `;
+      
+      db.query(selectQuery, [result.insertId], (selectErr, selectResults) => {
+        if (selectErr) return res.status(500).json({ error: selectErr });
+        
+        const newMessage = selectResults[0];
+        
+        // Broadcast to all clients in the forum room
+        io.to('forum').emit('newForumMessage', newMessage);
+        
+        res.json({ 
+          message: 'Forum message posted successfully',
+          data: newMessage
+        });
+      });
+    });
+  });
+});
+
 // Mark all forum messages as read for the current user
 app.post('/api/forum/mark-read', authenticateToken, (req, res) => {
   const currentUserId = req.user.id;

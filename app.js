@@ -830,22 +830,43 @@ app.get('/api/unread-count', authenticateToken, (req, res) => {
 });
 
 
-// List users who have sent messages to the current user along with unread counts
-app.get('/api/personal-chats', authenticateToken, (req, res) => {
-  const currentUserId = req.user.id;
+// Get list of users who have messaged the current user (for chat list)
+app.get('/api/personal-chats/:walletId', authenticateToken, (req, res) => {
+  const currentWalletId = req.params.walletId;
+
   const query = `
-    SELECT pm.sender_id AS user_id, u.username, SUM(IF(pm.is_read = 0, 1, 0)) AS unreadCount
-    FROM personal_messages pm
-    JOIN users u ON pm.sender_id = u.id
+    SELECT 
+      wc.wallet_id,
+      wc.walletaddress,
+      u.username,
+      u.display_picture,
+      MAX(pm.created_at) AS last_message_time,
+      SUM(CASE WHEN pm.is_read = 0 AND pm.receiver_id = ? THEN 1 ELSE 0 END) AS unread_count,
+      (
+        SELECT message 
+        FROM personal_messages 
+        WHERE (sender_id = wc.wallet_id AND receiver_id = ?)
+           OR (sender_id = ? AND receiver_id = wc.wallet_id)
+        ORDER BY created_at DESC 
+        LIMIT 1
+      ) AS last_message
+    FROM walletconnect wc
+    JOIN personal_messages pm ON wc.wallet_id = pm.sender_id
+    LEFT JOIN users u ON wc.wallet_id = u.wallet_FK
     WHERE pm.receiver_id = ?
-    GROUP BY pm.sender_id, u.username
+    GROUP BY wc.wallet_id, wc.walletaddress, u.username, u.display_picture
+    ORDER BY last_message_time DESC
   `;
-  db.query(query, [currentUserId], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
+
+  db.query(query, [currentWalletId, currentWalletId, currentWalletId, currentWalletId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to fetch chat list' });
+    }
+    
     res.json(results);
   });
 });
-
 // ---------------------- Posting Endpoint ----------------------
 
 // Create a new posting with an optional image upload

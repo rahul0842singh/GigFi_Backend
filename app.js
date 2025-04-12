@@ -468,31 +468,43 @@ app.delete('/api/chatrooms/:id', authenticateToken, (req, res) => {
   });
 });
 
+
+
 // Retrieve all messages from a chatroom (only for members)
 app.get('/api/chatrooms/:id/messages', authenticateToken, (req, res) => {
   const chatroomId = req.params.id;
-  const currentUserId = req.user.id;
-  
-  // Verify that the current user is a member of the chatroom
-  const checkQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';
-  db.query(checkQuery, [chatroomId, currentUserId], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
-    if (results.length === 0)
-      return res.status(403).json({ error: 'Access denied. You are not a member of this chatroom.' });
+  const currentUserId = req.user.id; // from your authenticateToken middleware
 
-    // Get messages along with the sender's username
-    const msgQuery = `
-      SELECT m.*, u.username 
-      FROM messages m JOIN users u ON m.user_id = u.id 
-      WHERE chatroom_id = ? 
-      ORDER BY created_at ASC
+  // Verify that the current user is a member of the chatroom
+  const membershipQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';
+  db.query(membershipQuery, [chatroomId, currentUserId], (membershipErr, membershipResults) => {
+    if (membershipErr) {
+      console.error('Error checking chatroom membership:', membershipErr);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    if (membershipResults.length === 0) {
+      return res.status(403).json({ error: 'Access denied. You are not a member of this chatroom.' });
+    }
+
+    // Fetch messages along with the sender's wallet address by joining messages with walletconnect
+    const messagesQuery = `
+      SELECT m.id, m.chatroom_id, m.user_id, m.message, m.attachment_url, m.is_read, m.created_at, w.walletaddress
+      FROM messages m 
+      JOIN walletconnect w ON m.user_id = w.wallet_id 
+      WHERE m.chatroom_id = ?
+      ORDER BY m.created_at ASC
     `;
-    db.query(msgQuery, [chatroomId], (err2, messages) => {
-      if (err2) return res.status(500).json({ error: err2 });
+    db.query(messagesQuery, [chatroomId], (msgErr, messages) => {
+      if (msgErr) {
+        console.error('Error fetching messages:', msgErr);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
       res.json(messages);
     });
   });
 });
+
+
 
 // Post a new message to a chatroom with optional attachment upload
 app.post('/api/chatrooms/:id/messages', authenticateToken, upload.single('attachment'), (req, res) => {

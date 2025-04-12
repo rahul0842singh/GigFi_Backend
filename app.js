@@ -284,18 +284,28 @@ app.post('/api/register', authenticateToken, upload.single('display_picture'), (
 // ---------------------- Chatroom Endpoints ----------------------
 
 // Retrieve all chatrooms ordered by newest first
-app.get('/api/chatrooms/:created_by', authenticateToken, (req, res) => {
-  const createdBy = req.params.created_by; // Retrieve the created_by parameter from the URL
-  const query = `SELECT * FROM chatrooms WHERE created_by = ? ORDER BY created_at DESC`;
+app.get('/api/chatrooms/:user_id', authenticateToken, (req, res) => {
+  // Retrieve the user_id from the URL (or consider deriving this from req.user if available)
+  const userId = req.params.user_id;
+
+  // SQL query: Select distinct chatrooms where the user is either the creator or a member.
+  const query = `
+    SELECT DISTINCT c.*
+    FROM chatrooms c
+    LEFT JOIN chatroom_members cm ON c.id = cm.chatroom_id
+    WHERE c.created_by = ? OR cm.user_id = ?
+    ORDER BY c.created_at DESC
+  `;
   
-  // Using a parameterized query to prevent SQL injection
-  db.query(query, [createdBy], (err, results) => {
+  // Execute the parameterized query to prevent SQL injection
+  db.query(query, [userId, userId], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err });
     }
     res.json(results);
   });
 });
+
 
 
 app.get('/api/chatrooms/:wallet_id', authenticateToken, (req, res) => {

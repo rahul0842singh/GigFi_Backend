@@ -466,10 +466,8 @@ app.post('/api/chatrooms/:id/:currentUserId/add', authenticateToken, (req, res) 
 
 
 // Remove a member from a chatroom (admin only)
-app.delete('/api/chatrooms/:id/:currentUserId/remove', authenticateToken, (req, res) => {
-  const chatroomId = req.params.id;
-  const { userId } = req.body;
-  const currentUserId = req.params.currentUserId;
+app.delete('/api/chatrooms/:chatroomId/:currentUserId/remove/:userId', authenticateToken, (req, res) => {
+  const { chatroomId, currentUserId, userId } = req.params;
 
   const adminQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ? AND role = "admin"';
   db.query(adminQuery, [chatroomId, currentUserId], (err, results) => {

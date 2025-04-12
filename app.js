@@ -507,10 +507,10 @@ app.get('/api/chatrooms/:id/:currentUserId/messages', authenticateToken, (req, r
 
 
 // Post a new message to a chatroom with optional attachment upload
-app.post('/api/chatrooms/:id/messages', authenticateToken, upload.single('attachment'), (req, res) => {
+app.post('/api/chatrooms/:id/:currentUserId/messages', authenticateToken, upload.single('attachment'), (req, res) => {
   const chatroomId = req.params.id;
   const { message } = req.body;
-  const currentUserId = req.user.id;
+  const currentUserId = req.params.currentUserId;
 
   // Verify membership in the chatroom
   const checkQuery = 'SELECT * FROM chatroom_members WHERE chatroom_id = ? AND user_id = ?';

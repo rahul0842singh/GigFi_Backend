@@ -552,11 +552,23 @@ app.get('/api/chatrooms/:id/:currentUserId/messages', authenticateToken, (req, r
 
     // Fetch messages along with the sender's wallet address by joining messages with walletconnect
     const messagesQuery = `
-      SELECT m.id, m.chatroom_id, m.user_id, m.message, m.attachment_url, m.is_read, m.created_at, w.walletaddress
-      FROM messages m 
-      JOIN walletconnect w ON m.user_id = w.wallet_id 
-      WHERE m.chatroom_id = ?
-      ORDER BY m.created_at ASC
+      SELECT 
+    m.id, 
+    m.chatroom_id, 
+    m.user_id, 
+    m.message, 
+    m.attachment_url, 
+    m.is_read, 
+    m.created_at, 
+    w.walletaddress
+FROM 
+    messages m 
+JOIN 
+    walletconnect w ON m.user_id = w.wallet_id 
+WHERE 
+    m.chatroom_id = ?
+ORDER BY 
+    m.created_at ASC
     `;
     db.query(messagesQuery, [chatroomId], (msgErr, messages) => {
       if (msgErr) {

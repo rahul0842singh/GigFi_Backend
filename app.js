@@ -975,8 +975,7 @@ FROM
     forum_messages fm
 JOIN 
     walletconnect wc ON fm.user_id = wc.wallet_id
-ORDER BY 
-    fm.created_at DESC;
+
   `;
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: err });

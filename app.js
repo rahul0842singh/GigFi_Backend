@@ -17,7 +17,7 @@ const port = process.env.PORT;
 
 // Use middleware to parse JSON bodies and handle CORS
 app.use(bodyParser.json());
-app.use(cors());
+// app.use(cors());
 
 // Create an HTTP server and attach Socket.IO for real-time notifications
 const server = http.createServer(app);
@@ -25,6 +25,10 @@ const io = socketIo(server, {
   cors: { origin: '*' }
 });
 
+app.use(cors({
+  origin: 'https://gigfi-backend-3.onrender.com',  // 👈 specific origin required for credentials
+  credentials: true                 // 👈 enable cookies/auth headers
+}));
 
 const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'your-admin-secret-key-here';
 

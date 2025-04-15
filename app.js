@@ -25,6 +25,72 @@ const io = socketIo(server, {
   cors: { origin: '*' }
 });
 
+
+const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || 'your-admin-secret-key-here';
+
+// Admin credentials (in production, store these securely or use a database)
+const ADMIN_CREDENTIALS = {
+  username: process.env.ADMIN_USERNAME ,
+  password: process.env.ADMIN_PASSWORD 
+};
+
+// Middleware to authenticate admin requests
+// Admin-specific authentication middleware
+function authenticateAdmin(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Admin token required' });
+  }
+
+  jwt.verify(token, ADMIN_SECRET_KEY, (err, admin) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired admin token' });
+    }
+    
+    if (!admin.isAdmin) {
+      return res.status(403).json({ error: 'Admin privileges required' });
+    }
+    
+    req.admin = admin;
+    next();
+  });
+}
+
+
+// Admin login route (completely separate from user login)
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'securepassword123';
+  
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: 'Invalid admin credentials' });
+  }
+  
+  const adminToken = jwt.sign(
+    { 
+      username: ADMIN_USERNAME,
+      isAdmin: true,
+      accessLevel: 'full' // You can add more admin-specific claims
+    }, 
+    ADMIN_SECRET_KEY,
+    { expiresIn: '1h' } // Shorter expiration for admin tokens
+  );
+  
+  res.json({ 
+    message: 'Admin login successful',
+    token: adminToken,
+    username: ADMIN_USERNAME
+  });
+});
+
+// Admin logout - in a real app you might implement token blacklisting
+app.post('/api/admin/logout', authenticateAdmin, (req, res) => {
+  res.json({ message: 'Admin logged out successfully' });
+});
+
 // Mapping to store connected users (userId -> socketId)
 const connectedUsers = {};
 

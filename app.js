@@ -26,7 +26,7 @@ const io = socketIo(server, {
 });
 
 app.use(cors({
-  origin: 'https://gigfi-backend-3.onrender.com',  // 👈 specific origin required for credentials
+  origin: 'http://localhost:5173',  // 👈 specific origin required for credentials
   credentials: true                 // 👈 enable cookies/auth headers
 }));
 

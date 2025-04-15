@@ -26,7 +26,7 @@ const io = socketIo(server, {
 });
 
 app.use(cors({
-  origin: 'http://localhost:5173',  // 👈 specific origin required for credentials
+  origin: 'https://white-stingray-431830.hostingersite.com',  // 👈 specific origin required for credentials
   credentials: true                 // 👈 enable cookies/auth headers
 }));
 
